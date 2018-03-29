@@ -1,0 +1,24 @@
+FROM microsoft/mssql-server-linux:2017-latest
+
+# Create a directory where we can copy the Database files. 
+RUN mkdir /var/opt/sqlsamples
+
+# Install pip and install 
+#RUN apt-get update
+#RUN apt-get -y install python-pip
+
+# This downloads the AdventureWorks2017.bak file from Microsoft
+WORKDIR /var/opt/sqlsamples
+RUN wget https://github.com/Microsoft/sql-server-samples/releases/download/adventureworks/AdventureWorksDW2017.bak
+
+# Select Edition of SQL Server. We use Developer Edition.
+# If you select another Edition make sure that you have the appropiate license.
+ENV MSSQL_PID=Developer 
+ENV SA_PASSWORD=MSone2018!
+ENV ACCEPT_EULA=Y
+
+# Give the SQL Server Service time to start
+# then log into the SQL Server and restore the database 
+HEALTHCHECK --interval=10s  \
+	CMD /opt/mssql-tools/bin/sqlcmd -S . -U sa -P MSone2018! \
+		-Q "RESTORE DATABASE [AdventureWorksDW2017] FROM  DISK = N'/var/opt/sqlsamples/AdventureWorksDW2017.bak' WITH  FILE = 1,  MOVE N'AdventureWorksDW2017' TO N'/var/opt/mssql/data/AdventureWorksDW2017.mdf',  MOVE N'AdventureWorksDW2017_log' TO N'/var/opt/mssql/data/AdventureWorksDW2017_log.ldf',  NOUNLOAD,  STATS = 5"
